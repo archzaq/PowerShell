@@ -7,21 +7,8 @@ $output = @()
 $stuff = Get-ADObject -Filter {objectClass -like "msFVE-RecoveryInformation"} -Properties whenCreated,msFVE-RecoveryPassword,CanonicalName,DistinguishedName
 
 foreach ($device in $stuff) {
-    $devInfo = $null
-    $admInfo = $null
-    $name = $null
-    $serial = $null
-    #$bitID = $null
-    $bitKey = $null
-    $bitDate = $null
-    $lastUser = $null
-    $lastActive = $null
-    $admCreds = $null
-    $admDate = $null
-    $ou = $null
-    $desc = $null
+    $devInfo = $null; $admInfo = $null; $name = $null; $serial = $null; $bitID = $null; $bitIDCreated = $null; $bitKey = $null; $bitDate = $null; $lastUser = $null; $lastActive = $null; $admCreds = $null; $admDate = $null; $ou = $null; $desc = $null
     
-    $count += 1
     $name = $($device.CanonicalName.Split('/')[-2])
     try {
         $devInfo = Get-CMDevice -Fast -Name $name | Select-Object SerialNumber,LastActiveTime,LastLogonUser
@@ -35,7 +22,8 @@ foreach ($device in $stuff) {
     }
 
     $serial = $($devInfo.SerialNumber)
-    #$bitID = $($device.'msFVE-RecoveryGuid')
+    $bitID = $($device.Name.split('{')[1].TrimEnd('}'))
+    $bitIDCreated = $($device.Name.split('{')[0])
     $bitKey = $($device.'msFVE-RecoveryPassword')
     $bitDate = $($device.whenCreated)
     $lastUser = $($devInfo.LastLogonUser)
@@ -46,10 +34,41 @@ foreach ($device in $stuff) {
     $ou = $($device.CanonicalName.Split('/')[0..$($device.CanonicalName.Split('/').Length - 3)] -join '/')
     $desc = $($admInfo.Description)
 
-    if ($serial -is [array]) {$serial = $serial[0]}
-    if ($bitKey -is [array]) {$bitKey = $bitKey[0]}
-    if ($lastUser -is [array]) {$lastUser = $lastUser[0]}
-    if ($lastActive -is [array]) {$lastActive = $lastActive[0]}
+    if ($serial -is [array]) {
+        if ($serial.Count -gt 1) {
+            $serial = $serial -join ', '
+        } else {
+            $serial = $serial[0]
+        }
+    }
+    if ($bitID -is [array]) {
+        if ($bitID.Count -gt 1) {
+            $bitID = $bitID -join ', '
+        } else {
+            $bitID = $bitID[0]
+        }
+    }
+    if ($bitKey -is [array]) {
+        if ($bitKey.Count -gt 1) {
+            $bitKey = $bitKey -join ', '
+        } else {
+            $bitKey = $bitKey[0]
+        }
+    }
+    if ($lastUser -is [array]) {
+        if ($lastUser.Count -gt 1) {
+            $lastUser = $lastUser -join ', '
+        } else {
+            $lastUser = $lastUser[0]
+        }
+    }
+    if ($lastActive -is [array]) {
+        if ($lastActive.Count -gt 1) {
+            $lastActive = $lastActive  -join ', '
+        } else {
+            $lastActive = $lastActive[0]
+        }
+    }
 
     if ($serial -eq $null) {$serial = "No serial"}
     if ($lastUser -eq $null) {$lastUser = "No last active user"}
@@ -60,7 +79,9 @@ foreach ($device in $stuff) {
 
     $obj = [PSCustomObject]@{
         'Device Name' = $name;
-        'Serial Number' = [String]$serial;
+        'Serial Number' = $serial;
+        'Recovery Key Created' = $bitIDCreated;
+        'Recovery Key ID' = $bitID;
         'BitLocker Key' = $bitKey;
         'Date Key Created' = $bitDate;
         'Last Logon User' = $lastUser;
