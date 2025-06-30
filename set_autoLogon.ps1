@@ -61,13 +61,12 @@ function Get-RegistryStatus {
         [hashtable]$Credentials
     )
 
-    Write-Host "`n"
     $regValues = Get-ItemProperty -Path $keyPath
     $userDone = $false
     $passDone = $false
     $logonDone = $false
 
-    Write-Host "===== Registry Status =====" -ForegroundColor Cyan
+    Write-Host "========= Registry Status =========" -ForegroundColor Cyan
     if ($Credentials -and $regValues.DefaultUserName -eq $Credentials.Username) {
         Write-Host "Username: $($regValues.DefaultUserName)" -ForegroundColor Green
         $userDone = $true
@@ -92,7 +91,6 @@ function Get-RegistryStatus {
     } else {
         Write-Host "AutoAdminLogon: Disabled" -ForegroundColor Red
     }
-    Write-Host "`n"
 
     return ($userDone -and $passDone -and $logonDone)
 }
@@ -103,7 +101,7 @@ function Set-AutoLogon {
         [hashtable]$Credentials
     )
     
-    Write-Host "===== Configuring Registry =====" -ForegroundColor Cyan
+    Write-Host "======= Configuring Registry ======" -ForegroundColor Cyan
     try {
         Set-ItemProperty -Path $keyPath -Name "DefaultUserName" -Value $Credentials.Username -ErrorAction Stop
         Write-Host "DefaultUserName configured" -ForegroundColor Green
@@ -132,14 +130,26 @@ function Start-Main {
     }
 
     if (Test-Path $keyPath) {
-        Backup-Registry
-
         $creds = Get-Credentials
+        Write-Host "This script will enable automatic logon for user: $($creds.Username)" -ForegroundColor Yellow
+        $confirm = Read-Host "Continue? (Y/n)"
+        if ($confirm -imatch '^n(o)?$') {
+            Write-Host "Operation cancelled." -ForegroundColor Yellow
+            pause
+            exit
+        }
+
+        Write-Host ""
+        Backup-Registry
+        Write-Host ""
         $isConfigured = Get-RegistryStatus -Credentials $creds
+        Write-Host ""
 
         if (-not $isConfigured) {
             if (Set-AutoLogon -Credentials $creds) {
+                Write-Host ""
                 Get-RegistryStatus -Credentials $creds | Out-Null
+                Write-Host ""
                 $creds.Password = $null
                 Write-Host "Process completed!" -ForegroundColor Green
                 pause
