@@ -56,6 +56,7 @@ function Get-Credentials {
     }
 }
 
+# Check current auto-logon registry entries
 function Get-RegistryStatus {
     param(
         [hashtable]$Credentials
@@ -172,3 +173,6 @@ function Start-Main {
 }
 
 Start-Main
+
+# Paste command into separate .ps1 file to run
+# Start-Process PowerShell -verb RunAs -ArgumentList "-Command `"Set-Location '\\<PATH>'; .\set_autoLogon.ps1 -Username '<USERNAME>' -Password '<PASSWORD>'`""
