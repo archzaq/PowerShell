@@ -6,6 +6,20 @@ $date = Get-Date -Format "MM-dd_hh-mm"
 $output = @()
 $stuff = Get-ADObject -Filter {objectClass -like "msFVE-RecoveryInformation"} -Properties whenCreated,msFVE-RecoveryPassword,CanonicalName,DistinguishedName
 
+function Check-IsArray {
+    param (
+        [array]$var
+    )
+    if ($var -is [array]) {
+        if ($var.Count -gt 1) {
+            $var= $var -join ', '
+        } else {
+            $var = $var[0]
+        }
+    }
+    return $var
+}
+
 foreach ($device in $stuff) {
     $devInfo = $null; $admInfo = $null; $name = $null; $serial = $null; $bitID = $null; $bitIDCreated = $null; $bitKey = $null; $bitDate = $null; $lastUser = $null; $lastActive = $null; $admCreds = $null; $admDate = $null; $ou = $null; $desc = $null
     
@@ -34,41 +48,11 @@ foreach ($device in $stuff) {
     $ou = $($device.CanonicalName.Split('/')[0..$($device.CanonicalName.Split('/').Length - 3)] -join '/')
     $desc = $($admInfo.Description)
 
-    if ($serial -is [array]) {
-        if ($serial.Count -gt 1) {
-            $serial = $serial -join ', '
-        } else {
-            $serial = $serial[0]
-        }
-    }
-    if ($bitID -is [array]) {
-        if ($bitID.Count -gt 1) {
-            $bitID = $bitID -join ', '
-        } else {
-            $bitID = $bitID[0]
-        }
-    }
-    if ($bitKey -is [array]) {
-        if ($bitKey.Count -gt 1) {
-            $bitKey = $bitKey -join ', '
-        } else {
-            $bitKey = $bitKey[0]
-        }
-    }
-    if ($lastUser -is [array]) {
-        if ($lastUser.Count -gt 1) {
-            $lastUser = $lastUser -join ', '
-        } else {
-            $lastUser = $lastUser[0]
-        }
-    }
-    if ($lastActive -is [array]) {
-        if ($lastActive.Count -gt 1) {
-            $lastActive = $lastActive  -join ', '
-        } else {
-            $lastActive = $lastActive[0]
-        }
-    }
+    $serial = Check-IsArray -var $serial
+    $bitID = Check-IsArray -var $bitID
+    $bitKey = Check-IsArray -var $bitKey
+    $lastUser = Check-IsArray -var $lastUser
+    $lastActive = Check-IsArray -var $lastActive
 
     if ($serial -eq $null) {$serial = "No serial"}
     if ($lastUser -eq $null) {$lastUser = "No last active user"}
@@ -96,4 +80,4 @@ foreach ($device in $stuff) {
 
 $output | Export-Csv -Path "FILEPATH" -NoTypeInformation
 
-Send-MailMessage -From 'REDACTED' -To 'REDACTED' -Subject 'BitLocker Key Export' -Body "Attached is a CSV with some keys." -Attachments "FILEPATH" -Priority High -DeliveryNotificationOption OnSuccess, OnFailure -SmtpServer 'MAILRELAY' 
+Send-MailMessage -From 'email' -To 'email' -Subject 'email subject' -Body "email body" -Attachments "path to output file" -Priority High -DeliveryNotificationOption OnSuccess, OnFailure -SmtpServer 'mail relay server address' 
