@@ -21,9 +21,7 @@ while ($flow) {
                 ''
             }
 
-            $obj = @()
-
-            foreach ($user in $users) {
+            $obj = foreach ($user in $users) {
                 $none = $false
                 $out = $null
                 try {
@@ -53,7 +51,7 @@ while ($flow) {
                     }
                 }
     
-                $obj += $out
+                $out
             }
             $obj | Export-Csv -Path "C:\Users\USER\Documents\Reports\UsernameInformation$($date).csv" -NoTypeInformation
             $flow = $false

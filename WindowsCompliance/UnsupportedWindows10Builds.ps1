@@ -24,9 +24,6 @@ $ver = @{
     '10.0.22621' = 'Windows 11 - 22H2'
 }
             
-# empty array for output
-$output = @()
-
 # dates to compare to
 $yesterday = (Get-Date).AddDays(-1)
 $twodays = (Get-Date).AddDays(-2)
@@ -35,7 +32,7 @@ $twodays = (Get-Date).AddDays(-2)
 $computers = Get-CMDevice -CollectionId ABC1234D | Select-Object LastActiveTime, LastLogonUser, IsClient, CNIsOnline, MACAddress, DeviceOSBuild, SerialNumber, Name, PrimaryUser
 
 # for loop to lookup each PC name
-foreach ($computer in $computers) {
+$output = foreach ($computer in $computers) {
 
     # gathering most of the information to storing in variables
     $name = $computer.Name
@@ -83,7 +80,7 @@ foreach ($computer in $computers) {
         if (($computer.LastActiveTime).Length -ne 0) {$lastActive = ($computer.LastActiveTime).ToLocalTime()}
         else {$lastActive = ''}
 
-         $obj = [PSCustomObject]@{
+        [PSCustomObject]@{
             'Hostname' = $name;
             'Primary User' = $computer.PrimaryUser;
             'Last Logon User' = $computer.LastLogonUser;
@@ -95,8 +92,6 @@ foreach ($computer in $computers) {
             'OS Version' = $ver[$buildNum];
             'OU Path' = $newOU
         }
-        # add psCO to array
-        $output += $obj
     } 
 }
 

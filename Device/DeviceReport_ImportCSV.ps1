@@ -58,15 +58,12 @@ while ($flow) {
                 ''
             }
             
-            # empty array for output
-            $output = @()
-            
             ''
             Write-Host 'Please be patient' -ForegroundColor Cyan
             ''
-            
+
             # for loop to lookup each PC name
-            foreach ($computer in $computers) {
+            $output = foreach ($computer in $computers) {
             
                 # gathering most of the information to storing in variables
                 $name = $computer.Hostname
@@ -125,7 +122,7 @@ while ($flow) {
                 else {$lastActive = ''}
             
                 # psCO to store/output the information gathered
-                $obj = [PSCustomObject]@{
+                [PSCustomObject]@{
                     'Hostname' = $name;
                     'Primary User' = $info.PrimaryUser;
                     'Last Logon User' = $info.LastLogonUser;
@@ -138,9 +135,6 @@ while ($flow) {
                     'OS Version' = $ver[$buildNum];
                     'OU Path' = $newOU
                 }
-                
-                # add psCO to array
-                $output += $obj
                 
             }
             # output the output

@@ -3,7 +3,6 @@
 
 $date = Get-Date -Format "MM-dd_hh-mm"
 [int32]$count = 0
-$output = @()
 $stuff = Get-ADObject -Filter {objectClass -like "msFVE-RecoveryInformation"} -Properties whenCreated,msFVE-RecoveryPassword,CanonicalName,DistinguishedName
 
 function Check-IsArray {
@@ -20,7 +19,7 @@ function Check-IsArray {
     return $var
 }
 
-foreach ($device in $stuff) {
+$output = foreach ($device in $stuff) {
     $devInfo = $null; $admInfo = $null; $name = $null; $serial = $null; $bitID = $null; $bitIDCreated = $null; $bitKey = $null; $bitDate = $null; $lastUser = $null; $lastActive = $null; $admCreds = $null; $admDate = $null; $ou = $null; $desc = $null
     
     $name = $($device.CanonicalName.Split('/')[-2])
@@ -61,7 +60,7 @@ foreach ($device in $stuff) {
     if ($admDate -eq $null) {$admDate = "No admin date"}
     if ($ou -eq $null) {$ou = "No OU"}
 
-    $obj = [PSCustomObject]@{
+    [PSCustomObject]@{
         'Device Name' = $name;
         'Serial Number' = $serial;
         'Recovery Key Created' = $bitIDCreated;
@@ -75,7 +74,6 @@ foreach ($device in $stuff) {
         'OU' = $ou;
         'Description' = $desc
     }
-    $output += $obj
 }
 
 $output | Export-Csv -Path "FILEPATH" -NoTypeInformation
