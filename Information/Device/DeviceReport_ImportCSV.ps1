@@ -1,8 +1,8 @@
  
 # Dear Windows,
 
-# grab date/time for the filename
-$date = Get-Date -Format "MM-dd_hh-mm"
+ # grab date/time for the filename
+$date = Get-Date -Format "yyyy-MM-dd_hh-mm"
 
 # create reports folder in documents if it doesnt exist
 if (Test-Path -Path C:\Users\$env:UserName\Documents\Reports -PathType Container) {}
@@ -32,7 +32,9 @@ $ver = @{
     '10.0.19044' = 'Windows 10 - 21H2';
     '10.0.19045' = 'Windows 10 - 22H2';
     '10.0.22000' = 'Windows 11 - 21H2';
-    '10.0.22621' = 'Windows 11 - 22H2'
+    '10.0.22621' = 'Windows 11 - 22H2';
+    '10.0.22631' = 'Windows 11 - 23H2';
+    '10.0.26100' = 'Windows 11 - 24H2'
 }
 
 # output file path
@@ -59,9 +61,8 @@ while ($flow) {
             # empty array for output
             $output = @()
             
-            # slight QoL
             ''
-            'Please be patient.'
+            Write-Host 'Please be patient' -ForegroundColor Cyan
             ''
             
             # for loop to lookup each PC name
@@ -69,6 +70,10 @@ while ($flow) {
             
                 # gathering most of the information to storing in variables
                 $name = $computer.Hostname
+                if (!$name) {
+                    Write-Host "Ensure the import CSV has 'Hostname' as the header" -ForegroundColor Red
+                }
+
                 $info = Get-CMDevice -Fast -Name $name | Select-Object LastActiveTime, LastLogonUser, IsClient, CNIsOnline, MACAddress,DeviceOSBuild,SerialNumber,PrimaryUser
 
                 # checks duplicate records for the one with client installed
@@ -113,10 +118,10 @@ while ($flow) {
                     "$name is not in SCCM."
                 }
 
-                if (($info.DeviceOSBuild).Length -ne 0) {$buildNum = ($info.deviceosbuild).Split('.')[0..2] -join '.'}
+                if (($info.DeviceOSBuild).length -ne 0) {$buildNum = ($info.deviceosbuild).Split('.')[0..2] -join '.'}
                 else {$buildNum = ''}
 
-                if (($info.LastActiveTime).Length -ne 0) {$lastActive = ($info.LastActiveTime).ToLocalTime()}
+                if (($info.LastActiveTime).length -ne 0) {$lastActive = ($info.LastActiveTime).ToLocalTime()}
                 else {$lastActive = ''}
             
                 # psCO to store/output the information gathered
@@ -141,7 +146,7 @@ while ($flow) {
             # output the output
             $output | Export-Csv -Path $outputPath -NoTypeInformation
             ''
-            "New report created at $outputPath"
+            Write-Host "New report created at $outputPath"
             $flow = $False
 
         } else {
@@ -150,4 +155,5 @@ while ($flow) {
             ''
         }
     }
-}
+} 
+
