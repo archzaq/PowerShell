@@ -1,10 +1,13 @@
-
+ 
 ##########################
 ### Author: Zac Reeves ###
 ### Created: 09-18-25  ###
-### Updated: 09-30-25  ###
-### Version: 1.2       ###
+### Version: 2.0       ###
 ##########################
+### Contributions:     #####################
+### Mike Martin (SLU): log deduplication ###
+### Last Updated: 01-15-26               ###
+############################################
 
 # Dear Windows,
 
@@ -14,8 +17,8 @@ $beforeClientInstalled = 'C:\_SMSTaskSequence\Logs\Smstslog\smsts.log'
 $afterClientInstalled = 'C:\windows\ccm\logs\Smstslog\smsts.log'
 $afterTaskSequence = 'C:\windows\ccm\logs\smsts.log'
 $logFiles = @($beforeDiskFormat, $afterDiskFormat, $beforeClientInstalled, $afterClientInstalled, $afterTaskSequence)
-$uncLogPath = '<path to log folder>'
-$driveRoot = '<drive root>'
+$uncLogPath = '\\ds.slu.edu\dep\ITS\ITS-EVERYONE\For SCCM Team\_Logs'
+$driveRoot = '\\ds.slu.edu\dep'
 $serialNumber = (Get-CimInstance -ClassName Win32_BIOS).SerialNumber.Trim()
 $hostname = "$env:COMPUTERNAME`_$serialNumber"
 $validPaths = @()
@@ -23,6 +26,25 @@ $filesFound = 0
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $scriptDrive = (Get-Item $scriptPath).PSDrive.Name
 $driveInfo = Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object {$_.DeviceID -eq "$scriptDrive`:"}
+
+function Get-LogLabel {
+    param(
+        [string]$Path
+    )
+    $mappings = @{
+        'x:\windows\temp\smstslog\smsts.log'          = 'WinPE_BeforeFormat'
+        'x:\smstslog\smsts.log'                       = 'WinPE_AfterFormat'
+        'c:\_smstasksequence\logs\smstslog\smsts.log' = 'OS_BeforeClient'
+        'c:\windows\ccm\logs\smstslog\smsts.log'      = 'OS_AfterClient'
+        'c:\windows\ccm\logs\smsts.log'               = 'OS_AfterTS'
+    }
+    
+    $lowerPath = $Path.ToLower()
+    if ($mappings.ContainsKey($lowerPath)) {
+        return $mappings[$lowerPath]
+    }
+    return 'UnknownPath'
+}
 
 function Check-LogFile {
     param (
@@ -201,15 +223,24 @@ if ($filesFound -gt 0) {
         Write-Host ''
         Write-Host 'Copying'
         
-        foreach ($path in $validPaths) {
-            try {
-                $fileName = Split-Path -Path $path -Leaf
+		foreach ($path in $validPaths) {
+		    try {
+                $fileNameOnly = Split-Path -Path $path -Leaf
+		        $baseName     = [System.IO.Path]::GetFileNameWithoutExtension($fileNameOnly)
+		        $ext          = [System.IO.Path]::GetExtension($fileNameOnly)
+
+                $label = Get-LogLabel -Path $path
+
+                $stamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
+                $fileName = "{0}_{1}_{2}{3}" -f $baseName, $label, $stamp, $ext
+
                 $destination = Join-Path -Path $finalOutputPath -ChildPath $fileName
                 Copy-Item -Path $path -Destination $destination -Force -ErrorAction Stop
+
                 Write-Host "Successfully copied '$fileName' to '$finalOutputPath'" -ForegroundColor Green
                 $successCount++
             } catch {
-                Write-Host "Unable to copy '$fileName' to '$finalOutputPath' - $_" -ForegroundColor Red
+                Write-Host "Unable to copy '$path' to '$finalOutputPath' - $_" -ForegroundColor Red
                 $failCount++
             }
         }
@@ -244,4 +275,5 @@ try {
     $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 } catch {
     pause
-}
+} 
+
